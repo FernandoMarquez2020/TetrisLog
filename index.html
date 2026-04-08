@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>ContainerTetris — JGO</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Oswald:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --steel: #1c2127;
+      --steel2: #252c35;
+      --rust: #c0392b;
+      --orange: #e67e22;
+      --yellow: #f1c40f;
+      --blue: #2980b9;
+      --teal: #16a085;
+      --purple: #8e44ad;
+      --green: #27ae60;
+      --gray: #7f8c8d;
+      --light: #ecf0f1;
+      --dim: #5d6d7e;
+      --glow: rgba(230,126,34,0.4);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d1117;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--light);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 10px;
+      overflow-x: hidden;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.02) 39px, rgba(255,255,255,0.02) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.02) 39px, rgba(255,255,255,0.02) 40px);
+    }
+
+    /* ── HEADER ── */
+    .header {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: var(--steel);
+      border: 1px solid #2d3748;
+      border-bottom: 2px solid var(--orange);
+    }
+
+    .logo-area {
+      display: flex;
+      flex-direction: column;
+      line-height: 1;
+    }
+
+    .logo-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      color: var(--orange);
+      letter-spacing: 3px;
+      text-shadow: 0 0 20px var(--glow);
+    }
+
+    .logo-sub {
+      font-size: 0.55rem;
+      color: var(--dim);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+
+    .header-badge {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 0.7rem;
+      color: var(--orange);
+      border: 1px solid var(--orange);
+      padding: 2px 8px;
+      letter-spacing: 2px;
+      opacity: 0.7;
+    }
+
+    /* ── MAIN LAYOUT ── */
+    .game-wrapper {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    /* ── SIDEBAR LEFT ── */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 110px;
+    }
+
+    .panel {
+      background: var(--steel);
+      border: 1px solid #2d3748;
+      padding: 10px;
+    }
+
+    .panel-title {
+      font-size: 0.55rem;
+      color: var(--dim);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      border-bottom: 1px solid #2d3748;
+      padding-bottom: 4px;
+    }
+
+    .panel-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.8rem;
+      color: var(--orange);
+      text-shadow: 0 0 10px var(--glow);
+      line-height: 1;
+    }
+
+    .panel-value.small { font-size: 1.3rem; }
+
+    /* Next piece preview */
+    #nextCanvas {
+      display: block;
+      background: #0d1117;
+      border: 1px solid #2d3748;
+      image-rendering: pixelated;
+    }
+
+    /* Controls hint */
+    .controls-hint {
+      font-size: 0.5rem;
+      color: var(--dim);
+      line-height: 2;
+      letter-spacing: 1px;
+    }
+
+    .controls-hint span {
+      color: var(--orange);
+    }
+
+    /* ── CANVAS ── */
+    #gameCanvas {
+      display: block;
+      background: #0a0e13;
+      border: 1px solid #2d3748;
+      border-left: 2px solid var(--orange);
+      border-right: 2px solid var(--orange);
+      image-rendering: pixelated;
+      flex-shrink: 0;
+    }
+
+    /* ── OVERLAYS ── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
+      padding: 20px;
+    }
+    .overlay.show { display: flex; }
+
+    .overlay-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2rem, 8vw, 4rem);
+      color: var(--orange);
+      letter-spacing: 6px;
+      text-shadow: 0 0 30px var(--glow);
+      margin-bottom: 8px;
+      animation: flicker 2s ease-in-out infinite;
+    }
+
+    @keyframes flicker {
+      0%,100% { opacity:1; }
+      92% { opacity:1; }
+      93% { opacity:0.4; }
+      94% { opacity:1; }
+      96% { opacity:0.6; }
+      97% { opacity:1; }
+    }
+
+    .overlay-sub {
+      font-size: 0.7rem;
+      color: var(--dim);
+      letter-spacing: 3px;
+      margin-bottom: 24px;
+      line-height: 2;
+    }
+
+    .overlay-score {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.5rem;
+      color: var(--yellow);
+      margin-bottom: 20px;
+    }
+
+    .btn-start {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.2rem;
+      letter-spacing: 4px;
+      padding: 12px 36px;
+      background: transparent;
+      border: 2px solid var(--orange);
+      color: var(--orange);
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+    .btn-start:hover {
+      background: var(--orange);
+      color: #000;
+      box-shadow: 0 0 20px var(--glow);
+    }
+
+    /* ── LINE CLEAR FLASH ── */
+    .flash { animation: flashAnim 0.15s ease; }
+    @keyframes flashAnim {
+      0%,100% { opacity:1; }
+      50% { opacity:0; }
+    }
+
+    /* ── MOBILE CONTROLS ── */
+    .mobile-controls {
+      display: none;
+      gap: 8px;
+      margin-top: 12px;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .mobile-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .mb-btn {
+      width: 60px;
+      height: 50px;
+      background: var(--steel);
+      border: 1px solid #2d3748;
+      color: var(--orange);
+      font-size: 1.3rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      transition: background 0.1s;
+    }
+    .mb-btn:active { background: var(--steel2); border-color: var(--orange); }
+    .mb-btn.wide { width: 130px; }
+
+    @media (max-width: 520px) {
+      .mobile-controls { display: flex; flex-direction: column; }
+      .controls-hint { display: none; }
+      .sidebar { min-width: 90px; }
+      .panel-value { font-size: 1.4rem; }
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      margin-top: 16px;
+      font-size: 0.5rem;
+      color: var(--dim);
+      letter-spacing: 3px;
+      text-align: center;
+    }
+    footer span { color: rgba(230,126,34,0.5); }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-area">
+    <div class="logo-title">CONTAINER TETRIS</div>
+    <div class="logo-sub">JGO · Haciendo Logística</div>
+  </div>
+  <div class="header-badge">DEPÓSITO VIRTUAL</div>
+</div>
+
+<div class="game-wrapper">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="sidebar">
+    <div class="panel">
+      <div class="panel-title">Puntaje</div>
+      <div class="panel-value" id="score">0</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Nivel</div>
+      <div class="panel-value small" id="level">1</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Líneas</div>
+      <div class="panel-value small" id="lines">0</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Siguiente</div>
+      <canvas id="nextCanvas" width="100" height="80"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Controles</div>
+      <div class="controls-hint">
+        <span>◄ ►</span> mover<br>
+        <span>▲</span> rotar<br>
+        <span>▼</span> bajar<br>
+        <span>ESP</span> caída<br>
+        <span>P</span> pausa
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME CANVAS -->
+  <canvas id="gameCanvas" width="200" height="400"></canvas>
+
+</div>
+
+<!-- MOBILE CONTROLS -->
+<div class="mobile-controls">
+  <div class="mobile-row">
+    <button class="mb-btn" id="mb-rotate">↻</button>
+  </div>
+  <div class="mobile-row">
+    <button class="mb-btn" id="mb-left">◄</button>
+    <button class="mb-btn" id="mb-down">▼</button>
+    <button class="mb-btn" id="mb-right">►</button>
+  </div>
+  <div class="mobile-row">
+    <button class="mb-btn wide" id="mb-drop">⬇ CAÍDA</button>
+  </div>
+</div>
+
+<footer>
+  CREATED BY <span>FERNANDO MARQUEZ</span> · JGO HACIENDO LOGÍSTICA
+</footer>
+
+<!-- START OVERLAY -->
+<div class="overlay show" id="startOverlay">
+  <div class="overlay-title">CONTAINER<br>TETRIS</div>
+  <div class="overlay-sub">
+    JGO · HACIENDO LOGÍSTICA<br>
+    APILÁ LOS CONTENEDORES<br>
+    40' Y 20' SIN DEJAR HUECOS
+  </div>
+  <button class="btn-start" onclick="startGame()">▶ INICIAR OPERACIÓN</button>
+</div>
+
+<!-- PAUSE OVERLAY -->
+<div class="overlay" id="pauseOverlay">
+  <div class="overlay-title">PAUSA</div>
+  <div class="overlay-sub">OPERACIÓN SUSPENDIDA</div>
+  <button class="btn-start" onclick="togglePause()">▶ CONTINUAR</button>
+</div>
+
+<!-- GAME OVER OVERLAY -->
+<div class="overlay" id="gameOverOverlay">
+  <div class="overlay-title">DEPÓSITO<br>LLENO</div>
+  <div class="overlay-sub">NO HAY MÁS ESPACIO</div>
+  <div class="overlay-score" id="finalScore">0 PTS</div>
+  <button class="btn-start" onclick="startGame()">↺ NUEVA OPERACIÓN</button>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONTENEDORES — PIEZAS DEL TETRIS
+// ══════════════════════════════════════════════
+const CELL = 20; // px por celda
+const COLS = 10;
+const ROWS = 20;
+
+// Colores industriales por tipo de contenedor
+const COLORS = {
+  I40:  '#1a5276', // Contenedor 40' — azul marino PIL
+  I20:  '#c0392b', // Contenedor 20' — rojo
+  L:    '#e67e22', // L — naranja JGO
+  J:    '#2980b9', // J — azul claro Maersk
+  O:    '#d4ac0d', // O — amarillo (contenedor refrigerado)
+  S:    '#27ae60', // S — verde
+  Z:    '#8e44ad', // Z — violeta
+};
+
+// Etiquetas de contenedor por tipo
+const LABELS = {
+  I40: ['40\'', 'PIL', 'JGO', 'MSC'],
+  I20: ['20\'', 'PIL', 'JGO'],
+  L:   ['JGO', 'PIL'],
+  J:   ['MSC', 'JGO'],
+  O:   ['REEF', '20\''],
+  S:   ['JGO', '20\''],
+  Z:   ['PIL', 'JGO'],
+};
+
+// Formas de las piezas [rotaciones][filas][cols]
+const PIECES = {
+  I40: {
+    color: COLORS.I40,
+    label: LABELS.I40,
+    shapes: [
+      [[1,1,1,1]],
+      [[1],[1],[1],[1]]
+    ]
+  },
+  I20: {
+    color: COLORS.I20,
+    label: LABELS.I20,
+    shapes: [
+      [[1,1]],
+      [[1],[1]]
+    ]
+  },
+  L: {
+    color: COLORS.L,
+    label: LABELS.L,
+    shapes: [
+      [[1,0],[1,0],[1,1]],
+      [[1,1,1],[1,0,0]],
+      [[1,1],[0,1],[0,1]],
+      [[0,0,1],[1,1,1]]
+    ]
+  },
+  J: {
+    color: COLORS.J,
+    label: LABELS.J,
+    shapes: [
+      [[0,1],[0,1],[1,1]],
+      [[1,0,0],[1,1,1]],
+      [[1,1],[1,0],[1,0]],
+      [[1,1,1],[0,0,1]]
+    ]
+  },
+  O: {
+    color: COLORS.O,
+    label: LABELS.O,
+    shapes: [
+      [[1,1],[1,1]]
+    ]
+  },
+  S: {
+    color: COLORS.S,
+    label: LABELS.S,
+    shapes: [
+      [[0,1,1],[1,1,0]],
+      [[1,0],[1,1],[0,1]]
+    ]
+  },
+  Z: {
+    color: COLORS.Z,
+    label: LABELS.Z,
+    shapes: [
+      [[1,1,0],[0,1,1]],
+      [[0,1],[1,1],[1,0]]
+    ]
+  }
+};
+
+const PIECE_TYPES = Object.keys(PIECES);
+
+// ══════════════════════════════════════════════
+// ESTADO DEL JUEGO
+// ══════════════════════════════════════════════
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const nextCanvas = document.getElementById('nextCanvas');
+const nCtx = nextCanvas.getContext('2d');
+
+let board, currentPiece, nextPiece, score, level, lines;
+let gameRunning = false, paused = false;
+let dropInterval, lastDrop, animFrame;
+let dropSpeed = 800;
+
+function createBoard() {
+  return Array.from({length: ROWS}, () => Array(COLS).fill(null));
+}
+
+function randomPiece() {
+  const type = PIECE_TYPES[Math.floor(Math.random() * PIECE_TYPES.length)];
+  const p = PIECES[type];
+  return {
+    type,
+    color: p.color,
+    label: p.label,
+    shapes: p.shapes,
+    rot: 0,
+    x: Math.floor(COLS/2) - Math.floor(p.shapes[0][0].length/2),
+    y: 0
+  };
+}
+
+function getShape(piece) {
+  return piece.shapes[piece.rot % piece.shapes.length];
+}
+
+// ══════════════════════════════════════════════
+// DIBUJO
+// ══════════════════════════════════════════════
+function drawCell(context, x, y, color, label, cellSize) {
+  const px = x * cellSize;
+  const py = y * cellSize;
+  const cs = cellSize;
+
+  // Fondo del contenedor
+  context.fillStyle = color;
+  context.fillRect(px+1, py+1, cs-2, cs-2);
+
+  // Textura metálica — líneas horizontales
+  context.fillStyle = 'rgba(255,255,255,0.06)';
+  for(let i=3; i<cs-2; i+=4) {
+    context.fillRect(px+1, py+i, cs-2, 1);
+  }
+
+  // Borde superior más claro (highlight)
+  context.fillStyle = 'rgba(255,255,255,0.25)';
+  context.fillRect(px+1, py+1, cs-2, 2);
+
+  // Borde inferior más oscuro (sombra)
+  context.fillStyle = 'rgba(0,0,0,0.4)';
+  context.fillRect(px+1, py+cs-3, cs-2, 2);
+
+  // Borde izquierdo highlight
+  context.fillStyle = 'rgba(255,255,255,0.15)';
+  context.fillRect(px+1, py+1, 2, cs-2);
+
+  // Borde derecho sombra
+  context.fillStyle = 'rgba(0,0,0,0.3)';
+  context.fillRect(px+cs-3, py+1, 2, cs-2);
+
+  // Esquinas — pernos del contenedor
+  context.fillStyle = 'rgba(0,0,0,0.5)';
+  context.fillRect(px+1, py+1, 3, 3);
+  context.fillRect(px+cs-4, py+1, 3, 3);
+  context.fillRect(px+1, py+cs-4, 3, 3);
+  context.fillRect(px+cs-4, py+cs-4, 3, 3);
+
+  // Etiqueta del contenedor
+  if(label && cs >= 18) {
+    context.font = `bold ${cs < 22 ? 5 : 6}px 'Share Tech Mono'`;
+    context.fillStyle = 'rgba(255,255,255,0.55)';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(label, px + cs/2, py + cs/2);
+  }
+
+  // Borde exterior oscuro
+  context.strokeStyle = 'rgba(0,0,0,0.7)';
+  context.lineWidth = 1;
+  context.strokeRect(px+0.5, py+0.5, cs-1, cs-1);
+}
+
+function drawGhost() {
+  const shape = getShape(currentPiece);
+  let ghostY = currentPiece.y;
+  while(isValid(currentPiece.x, ghostY+1, shape)) ghostY++;
+  if(ghostY === currentPiece.y) return;
+
+  shape.forEach((row, r) => {
+    row.forEach((cell, c) => {
+      if(cell) {
+        const px = (currentPiece.x + c) * CELL;
+        const py = (ghostY + r) * CELL;
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fillRect(px+1, py+1, CELL-2, CELL-2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px+0.5, py+0.5, CELL-1, CELL-1);
+      }
+    });
+  });
+}
+
+function drawBoard() {
+  // Fondo cuadriculado
+  ctx.fillStyle = '#0a0e13';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Grid sutil
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx.lineWidth = 1;
+  for(let x=0; x<=COLS; x++) { ctx.beginPath(); ctx.moveTo(x*CELL, 0); ctx.lineTo(x*CELL, canvas.height); ctx.stroke(); }
+  for(let y=0; y<=ROWS; y++) { ctx.beginPath(); ctx.moveTo(0, y*CELL); ctx.lineTo(canvas.width, y*CELL); ctx.stroke(); }
+
+  // Celdas del tablero
+  board.forEach((row, r) => {
+    row.forEach((cell, c) => {
+      if(cell) drawCell(ctx, c, r, cell.color, cell.label, CELL);
+    });
+  });
+
+  // Ghost piece
+  if(currentPiece) drawGhost();
+
+  // Pieza actual
+  if(currentPiece) {
+    const shape = getShape(currentPiece);
+    const lbl = currentPiece.label[0];
+    shape.forEach((row, r) => {
+      row.forEach((cell, c) => {
+        if(cell) drawCell(ctx, currentPiece.x+c, currentPiece.y+r, currentPiece.color, lbl, CELL);
+      });
+    });
+  }
+}
+
+function drawNext() {
+  nCtx.fillStyle = '#0d1117';
+  nCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+  if(!nextPiece) return;
+  const shape = nextPiece.shapes[0];
+  const cellSize = 18;
+  const offsetX = Math.floor((nextCanvas.width - shape[0].length * cellSize) / 2);
+  const offsetY = Math.floor((nextCanvas.height - shape.length * cellSize) / 2);
+  const lbl = nextPiece.label[0];
+  shape.forEach((row, r) => {
+    row.forEach((cell, c) => {
+      if(cell) {
+        drawCell(nCtx,
+          (offsetX/cellSize)+c,
+          (offsetY/cellSize)+r,
+          nextPiece.color, lbl, cellSize);
+      }
+    });
+  });
+}
+
+// ══════════════════════════════════════════════
+// LÓGICA
+// ══════════════════════════════════════════════
+function isValid(nx, ny, shape) {
+  return shape.every((row, r) =>
+    row.every((cell, c) => {
+      if(!cell) return true;
+      const bx = nx+c, by = ny+r;
+      return bx >= 0 && bx < COLS && by < ROWS && (by < 0 || !board[by][bx]);
+    })
+  );
+}
+
+function lockPiece() {
+  const shape = getShape(currentPiece);
+  const lbl = currentPiece.label[0];
+  shape.forEach((row, r) => {
+    row.forEach((cell, c) => {
+      if(cell) {
+        const by = currentPiece.y + r;
+        if(by >= 0) board[by][currentPiece.x+c] = {color: currentPiece.color, label: lbl};
+      }
+    });
+  });
+  clearLines();
+  spawnPiece();
+}
+
+function clearLines() {
+  let cleared = 0;
+  for(let r = ROWS-1; r >= 0; r--) {
+    if(board[r].every(c => c !== null)) {
+      board.splice(r, 1);
+      board.unshift(Array(COLS).fill(null));
+      cleared++;
+      r++;
+    }
+  }
+  if(cleared > 0) {
+    const pts = [0, 100, 300, 500, 800][cleared] * level;
+    score += pts;
+    lines += cleared;
+    level = Math.floor(lines / 10) + 1;
+    dropSpeed = Math.max(80, 800 - (level-1) * 70);
+    document.getElementById('score').textContent = score;
+    document.getElementById('level').textContent = level;
+    document.getElementById('lines').textContent = lines;
+    // Flash efecto
+    canvas.classList.add('flash');
+    setTimeout(() => canvas.classList.remove('flash'), 150);
+  }
+}
+
+function spawnPiece() {
+  currentPiece = nextPiece || randomPiece();
+  nextPiece = randomPiece();
+  drawNext();
+  if(!isValid(currentPiece.x, currentPiece.y, getShape(currentPiece))) {
+    gameOver();
+  }
+}
+
+function moveLeft()  { if(isValid(currentPiece.x-1, currentPiece.y, getShape(currentPiece))) currentPiece.x--; }
+function moveRight() { if(isValid(currentPiece.x+1, currentPiece.y, getShape(currentPiece))) currentPiece.x++; }
+function moveDown()  {
+  if(isValid(currentPiece.x, currentPiece.y+1, getShape(currentPiece))) {
+    currentPiece.y++;
+    return true;
+  }
+  lockPiece();
+  return false;
+}
+function hardDrop() {
+  while(isValid(currentPiece.x, currentPiece.y+1, getShape(currentPiece))) {
+    currentPiece.y++;
+    score += 2;
+  }
+  lockPiece();
+  document.getElementById('score').textContent = score;
+}
+function rotate() {
+  const newRot = (currentPiece.rot + 1) % currentPiece.shapes.length;
+  const newShape = currentPiece.shapes[newRot];
+  // Wall kick
+  let nx = currentPiece.x;
+  if(isValid(nx, currentPiece.y, newShape)) { currentPiece.rot = newRot; return; }
+  if(isValid(nx-1, currentPiece.y, newShape)) { currentPiece.rot = newRot; currentPiece.x--; return; }
+  if(isValid(nx+1, currentPiece.y, newShape)) { currentPiece.rot = newRot; currentPiece.x++; return; }
+  if(isValid(nx-2, currentPiece.y, newShape)) { currentPiece.rot = newRot; currentPiece.x-=2; return; }
+}
+
+// ══════════════════════════════════════════════
+// GAME LOOP
+// ══════════════════════════════════════════════
+function gameLoop(timestamp) {
+  if(!gameRunning || paused) return;
+  if(!lastDrop) lastDrop = timestamp;
+  if(timestamp - lastDrop > dropSpeed) {
+    moveDown();
+    lastDrop = timestamp;
+  }
+  drawBoard();
+  animFrame = requestAnimationFrame(gameLoop);
+}
+
+function startGame() {
+  board = createBoard();
+  score = 0; level = 1; lines = 0; dropSpeed = 800; lastDrop = 0;
+  document.getElementById('score').textContent = '0';
+  document.getElementById('level').textContent = '1';
+  document.getElementById('lines').textContent = '0';
+  document.getElementById('startOverlay').classList.remove('show');
+  document.getElementById('gameOverOverlay').classList.remove('show');
+  document.getElementById('pauseOverlay').classList.remove('show');
+  gameRunning = true; paused = false;
+  nextPiece = randomPiece();
+  spawnPiece();
+  cancelAnimationFrame(animFrame);
+  animFrame = requestAnimationFrame(gameLoop);
+}
+
+function gameOver() {
+  gameRunning = false;
+  cancelAnimationFrame(animFrame);
+  document.getElementById('finalScore').textContent = score.toLocaleString() + ' PTS';
+  document.getElementById('gameOverOverlay').classList.add('show');
+}
+
+function togglePause() {
+  if(!gameRunning) return;
+  paused = !paused;
+  document.getElementById('pauseOverlay').classList.toggle('show', paused);
+  if(!paused) {
+    lastDrop = 0;
+    animFrame = requestAnimationFrame(gameLoop);
+  }
+}
+
+// ══════════════════════════════════════════════
+// CONTROLES TECLADO
+// ══════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if(!gameRunning || paused) { if(e.key==='p'||e.key==='P') togglePause(); return; }
+  switch(e.key) {
+    case 'ArrowLeft':  e.preventDefault(); moveLeft(); break;
+    case 'ArrowRight': e.preventDefault(); moveRight(); break;
+    case 'ArrowDown':  e.preventDefault(); moveDown(); lastDrop=performance.now(); break;
+    case 'ArrowUp':    e.preventDefault(); rotate(); break;
+    case ' ':          e.preventDefault(); hardDrop(); break;
+    case 'p': case 'P': togglePause(); break;
+  }
+  drawBoard();
+});
+
+// ══════════════════════════════════════════════
+// CONTROLES MÓVIL
+// ══════════════════════════════════════════════
+document.getElementById('mb-left').addEventListener('touchstart', e=>{e.preventDefault(); if(gameRunning&&!paused){moveLeft();drawBoard();}},{passive:false});
+document.getElementById('mb-right').addEventListener('touchstart', e=>{e.preventDefault(); if(gameRunning&&!paused){moveRight();drawBoard();}},{passive:false});
+document.getElementById('mb-down').addEventListener('touchstart', e=>{e.preventDefault(); if(gameRunning&&!paused){moveDown();lastDrop=performance.now();drawBoard();}},{passive:false});
+document.getElementById('mb-rotate').addEventListener('touchstart', e=>{e.preventDefault(); if(gameRunning&&!paused){rotate();drawBoard();}},{passive:false});
+document.getElementById('mb-drop').addEventListener('touchstart', e=>{e.preventDefault(); if(gameRunning&&!paused){hardDrop();drawBoard();}},{passive:false});
+
+// Swipe touch
+let touchStartX, touchStartY;
+canvas.addEventListener('touchstart', e=>{ touchStartX=e.touches[0].clientX; touchStartY=e.touches[0].clientY; },{passive:true});
+canvas.addEventListener('touchend', e=>{
+  if(!gameRunning||paused) return;
+  const dx=e.changedTouches[0].clientX-touchStartX;
+  const dy=e.changedTouches[0].clientY-touchStartY;
+  if(Math.abs(dx)>Math.abs(dy)){
+    if(dx>20) moveRight(); else if(dx<-20) moveLeft();
+  } else {
+    if(dy>20) moveDown(); else if(dy<-20) rotate();
+  }
+  if(Math.abs(dx)<10&&Math.abs(dy)<10) rotate();
+  drawBoard();
+},{passive:true});
+
+// Dibujo inicial
+drawBoard();
+</script>
+</body>
+</html>
