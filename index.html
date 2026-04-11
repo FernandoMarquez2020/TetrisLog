@@ -266,7 +266,7 @@
 </div>
 
 <!-- ═══ JUEGO ═══ -->
-<div id="gameScreen" style="display:none;width:100%;height:100%;">
+<div id="gameScreen" style="display:none;position:fixed;inset:0;width:100%;height:100%;overflow:hidden;">
   <div class="w">
     <div class="hdr">
       <div><div class="ht">CONTAINER TETRIS</div><div class="hs">JGO · HACIENDO LOGÍSTICA</div></div>
@@ -402,16 +402,12 @@ async function saveScore(name, score) {
 function launchGame() {
   document.getElementById('mainScreen').style.display = 'none';
   const gs = document.getElementById('gameScreen');
-  gs.style.display = '';
-  gs.style.width = '100%';
-  gs.style.height = '100%';
-  // Esperar a que el DOM actualice el layout antes de calcular tamaños
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      resize();
-      startGame();
-    });
-  });
+  gs.style.display = 'block';
+  // Calcular tamaño después de que el browser renderice
+  setTimeout(() => {
+    resize();
+    startGame();
+  }, 100);
 }
 
 function backToMain() {
@@ -587,20 +583,18 @@ const mkBoard=()=>Array.from({length:ROWS},()=>Array(COLS).fill(null));
 
 // ── CALCULAR TAMAÑO DE CELDA RESPONSIVO ──
 function resize(){
-  const gs = document.getElementById('gameScreen');
-  if(!gs || gs.style.display === 'none') return;
   const vw=window.innerWidth, vh=window.innerHeight;
-  const mc=document.querySelector('.mc');
-  const hdr=document.querySelector('.hdr');
-  const controlsH = mc ? mc.offsetHeight+8 : Math.min(140, vh*0.18);
-  const hdrH = hdr ? hdr.offsetHeight+8 : 50;
-  const availH=vh-hdrH-controlsH-16;
-  const availW=vw-8;
-  const sbW=Math.max(60, Math.min(88, vw*0.19));
-  const canvasAvailW=availW-sbW-4;
-  const cellByW=Math.floor(canvasAvailW/COLS);
-  const cellByH=Math.floor(availH/ROWS);
-  CELL=Math.max(22, Math.min(cellByW, cellByH, 52));
+  // Calcular sin depender del DOM
+  const hdrH = 46;   // altura fija del header
+  const ctrlH = Math.min(148, vh * 0.19); // altura controles
+  const padding = 16;
+  const availH = vh - hdrH - ctrlH - padding;
+  const availW = vw - 8;
+  const sbW = Math.max(60, Math.min(84, Math.floor(vw * 0.19)));
+  const canvasW = availW - sbW - 4;
+  const cellByW = Math.floor(canvasW / COLS);
+  const cellByH = Math.floor(availH / ROWS);
+  CELL = Math.max(20, Math.min(cellByW, cellByH, 54));
 
   // Canvas principal
   gc.width=COLS*CELL; gc.height=ROWS*CELL;
