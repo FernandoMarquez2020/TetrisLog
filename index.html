@@ -401,8 +401,17 @@ async function saveScore(name, score) {
 // ═══ NAVEGACIÓN ═══
 function launchGame() {
   document.getElementById('mainScreen').style.display = 'none';
-  document.getElementById('gameScreen').style.display = '';
-  setTimeout(() => { resize(); startGame(); }, 50);
+  const gs = document.getElementById('gameScreen');
+  gs.style.display = '';
+  gs.style.width = '100%';
+  gs.style.height = '100%';
+  // Esperar a que el DOM actualice el layout antes de calcular tamaños
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      resize();
+      startGame();
+    });
+  });
 }
 
 function backToMain() {
@@ -578,9 +587,13 @@ const mkBoard=()=>Array.from({length:ROWS},()=>Array(COLS).fill(null));
 
 // ── CALCULAR TAMAÑO DE CELDA RESPONSIVO ──
 function resize(){
+  const gs = document.getElementById('gameScreen');
+  if(!gs || gs.style.display === 'none') return;
   const vw=window.innerWidth, vh=window.innerHeight;
-  const controlsH=Math.min(140, vh*0.18); // altura controles
-  const hdrH=document.querySelector('.hdr').offsetHeight+8;
+  const mc=document.querySelector('.mc');
+  const hdr=document.querySelector('.hdr');
+  const controlsH = mc ? mc.offsetHeight+8 : Math.min(140, vh*0.18);
+  const hdrH = hdr ? hdr.offsetHeight+8 : 50;
   const availH=vh-hdrH-controlsH-16;
   const availW=vw-8;
   const sbW=Math.max(60, Math.min(88, vw*0.19));
