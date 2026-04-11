@@ -403,11 +403,11 @@ function launchGame() {
   document.getElementById('mainScreen').style.display = 'none';
   const gs = document.getElementById('gameScreen');
   gs.style.display = 'block';
-  // Calcular tamaño después de que el browser renderice
+  // Dar tiempo al browser para renderizar el layout
   setTimeout(() => {
     resize();
-    startGame();
-  }, 100);
+    setTimeout(() => startGame(), 50);
+  }, 150);
 }
 
 function backToMain() {
@@ -695,10 +695,15 @@ gc.addEventListener('touchend',e=>{
   drawBoard();
 },{passive:true});
 
-// Init
-window.addEventListener('resize', resize);
-window.addEventListener('orientationchange', ()=>setTimeout(resize,100));
-resize();
+// Init — NO llamar resize() hasta que se abra el juego
+window.addEventListener('resize', () => {
+  if(document.getElementById('gameScreen').style.display !== 'none') resize();
+});
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => {
+    if(document.getElementById('gameScreen').style.display !== 'none') resize();
+  }, 200);
+});
 
 
 // Override gameOver para mostrar overlay con botón ranking
