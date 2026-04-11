@@ -671,7 +671,7 @@ function loop(ts){if(!running||paused)return;if(!lastDrop)lastDrop=ts;if(ts-last
 function startGame(){
   board=mkBoard();score=0;level=1;lines=0;speed=800;lastDrop=0;
   ['score','level','lines'].forEach(id=>document.getElementById(id).textContent=id==='level'?'1':'0');
-  ['ovS','ovG','ovP'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  ['ovG','ovP'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('show');});
   running=true;paused=false;nxt=rndPiece();spawnPiece();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
 }
 function gameOver(){running=false;cancelAnimationFrame(raf);document.getElementById('fsc').textContent=score.toLocaleString()+' PTS';document.getElementById('ovG').classList.add('show');}
