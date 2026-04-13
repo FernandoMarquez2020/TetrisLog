@@ -174,18 +174,22 @@ const fdb = firebase.database();
 let rankData = [];
 
 function loadRanking() {
-  // Usar get() que funciona correctamente (on value solo devuelve 1 item)
-  async function fetch() {
-    const snap = await fdb.ref('tetris_ranking').get();
-    rankData = [];
-    snap.forEach(c => rankData.push({...c.val(), key:c.key}));
-    rankData.sort((a,b) => b.score - a.score);
-    rankData = rankData.slice(0, 20);
-    renderRanking();
+  function fetch() {
+    // Usar once() con callback — más confiable que get() o on()
+    fdb.ref('tetris_ranking').once('value', snap => {
+      rankData = [];
+      snap.forEach(c => {
+        const v = c.val();
+        if(v && v.name && v.score) rankData.push({...v, key:c.key});
+      });
+      rankData.sort((a,b) => b.score - a.score);
+      rankData = rankData.slice(0, 20);
+      document.getElementById('rankCnt').textContent = rankData.length + ' jugadores';
+      renderRanking();
+    });
   }
   fetch();
-  // Refrescar cada 15 segundos para ver cambios en tiempo real
-  setInterval(fetch, 15000);
+  setInterval(fetch, 20000);
 }
 
 function renderRanking() {

@@ -41,16 +41,14 @@ async function test() {
   all.sort((a,b) => b.score - a.score);
   all.forEach((d,i) => log(`  ${i+1}. ${d.name} - ${d.score}`));
   
-  // 2. Test con listener
-  log('\nTest con .on("value"):', '#0ff');
-  let count = 0;
-  db.ref('tetris_ranking').on('value', snap => {
-    count++;
+  // 2. Test con once()
+  log('\nTest con .once("value"):', '#0ff');
+  db.ref('tetris_ranking').once('value', snap => {
     let items = [];
     snap.forEach(c => items.push({...c.val()}));
-    log(`  Listener #${count}: ${items.length} items`);
+    log(`  once(): ${items.length} items`);
+    items.sort((a,b)=>b.score-a.score);
     items.forEach((d,i) => log(`    ${i+1}. ${d.name} - ${d.score}`));
-    if(count >= 2) db.ref('tetris_ranking').off('value');
   });
 }
 
