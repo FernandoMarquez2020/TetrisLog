@@ -196,22 +196,35 @@ function renderRanking() {
   const list = document.getElementById('rankList');
   const cnt = document.getElementById('rankCnt');
   cnt.textContent = rankData.length + ' jugadores';
+  list.innerHTML = '';
   if(!rankData.length) {
-    list.innerHTML = '<li class="rank-empty">SIN REGISTROS — ¡SÉ EL PRIMERO!</li>';
+    const li = document.createElement('li');
+    li.className = 'rank-empty';
+    li.textContent = 'SIN REGISTROS — ¡SE EL PRIMERO!';
+    list.appendChild(li);
     return;
   }
   const medals = ['🥇','🥈','🥉'];
-  list.innerHTML = rankData.map((d,i) => {
-    const pos = i+1;
-    const medal = medals[i] || pos;
-    const cls = pos<=3 ? `r${pos}` : '';
-    const date = d.date ? new Date(d.date).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '';
-    return `<li class="ri ${cls}">
-      <span class="rpos" style="color:${pos==1?'#FFD700':pos==2?'#C0C0C0':pos==3?'#CD7F32':'#5d6d7e'}">${medal}</span>
-      <span class="rname">${(d.name||'???').substring(0,15).toUpperCase()}<br><span class="rdate">${date}</span></span>
-      <span class="rscore">${d.score.toLocaleString()}</span>
-    </li>`;
-  }).join('');
+  const colors = ['#FFD700','#C0C0C0','#CD7F32'];
+  rankData.forEach((d, i) => {
+    const pos = i + 1;
+    const li = document.createElement('li');
+    li.className = 'ri' + (pos<=3?' r'+pos:'');
+    const p = document.createElement('span');
+    p.className = 'rpos';
+    p.style.color = colors[i]||'#5d6d7e';
+    p.textContent = medals[i]||String(pos);
+    const n = document.createElement('span');
+    n.className = 'rname';
+    const nm = String(d.name||'???').substring(0,15).toUpperCase();
+    const dt = d.date?new Date(d.date).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'';
+    n.innerHTML = nm+(dt?'<br><span class="rdate">'+dt+'</span>':'');
+    const s = document.createElement('span');
+    s.className = 'rscore';
+    s.textContent = String(Number(d.score)||0);
+    li.appendChild(p); li.appendChild(n); li.appendChild(s);
+    list.appendChild(li);
+  });
 }
 
 async function pushScore(name, pts) {
