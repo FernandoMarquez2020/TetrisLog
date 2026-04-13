@@ -6,6 +6,7 @@
 <div id="log" style="white-space:pre-line"></div>
 <button onclick="test()" style="padding:10px 20px;margin:10px;font-size:14px">▶ TEST</button>
 <button onclick="addTest()" style="padding:10px 20px;margin:10px;font-size:14px;background:#333;color:#ff0">+ AGREGAR DATOS TEST</button>
+<button onclick="clearTest()" style="padding:10px 20px;margin:10px;font-size:14px;background:#500;color:#f00">🗑 LIMPIAR DB</button>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -51,6 +52,12 @@ async function test() {
     items.forEach((d,i) => log(`    ${i+1}. ${d.name} - ${d.score}`));
     if(count >= 2) db.ref('tetris_ranking').off('value');
   });
+}
+
+async function clearTest() {
+  log('Limpiando DB...', '#f00');
+  await db.ref('tetris_ranking').remove();
+  log('✅ DB limpiada', '#0f0');
 }
 
 async function addTest() {

@@ -174,15 +174,18 @@ const fdb = firebase.database();
 let rankData = [];
 
 function loadRanking() {
-  // Traer todos y filtrar top 20 en cliente para evitar problemas de índice
-  fdb.ref('tetris_ranking').on('value', snap => {
+  // Usar get() que funciona correctamente (on value solo devuelve 1 item)
+  async function fetch() {
+    const snap = await fdb.ref('tetris_ranking').get();
     rankData = [];
     snap.forEach(c => rankData.push({...c.val(), key:c.key}));
-    // Ordenar por score descendente y tomar top 20
     rankData.sort((a,b) => b.score - a.score);
     rankData = rankData.slice(0, 20);
     renderRanking();
-  });
+  }
+  fetch();
+  // Refrescar cada 15 segundos para ver cambios en tiempo real
+  setInterval(fetch, 15000);
 }
 
 function renderRanking() {
