@@ -174,13 +174,15 @@ const fdb = firebase.database();
 let rankData = [];
 
 function loadRanking() {
-  fdb.ref('tetris_ranking').orderByChild('score').limitToLast(20)
-    .on('value', snap => {
-      rankData = [];
-      snap.forEach(c => rankData.push({...c.val(), key:c.key}));
-      rankData.sort((a,b) => b.score - a.score);
-      renderRanking();
-    });
+  // Traer todos y filtrar top 20 en cliente para evitar problemas de índice
+  fdb.ref('tetris_ranking').on('value', snap => {
+    rankData = [];
+    snap.forEach(c => rankData.push({...c.val(), key:c.key}));
+    // Ordenar por score descendente y tomar top 20
+    rankData.sort((a,b) => b.score - a.score);
+    rankData = rankData.slice(0, 20);
+    renderRanking();
+  });
 }
 
 function renderRanking() {
