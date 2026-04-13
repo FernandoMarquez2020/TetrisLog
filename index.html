@@ -42,7 +42,7 @@
     #scGame{
       position:fixed;inset:0;z-index:10;
       display:none;flex-direction:column;align-items:center;
-      padding:4px;
+      padding:4px;overflow:hidden;
     }
     .hdr{width:100%;display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:rgba(10,13,18,0.97);border-bottom:2px solid var(--o);flex-shrink:0;margin-bottom:4px;}
     .ht{font-family:'Bebas Neue',sans-serif;font-size:clamp(0.9rem,3vw,1.1rem);color:var(--o);letter-spacing:3px;}
@@ -289,11 +289,14 @@ function goMain() {
 
 function calcCell() {
   const vw = window.innerWidth, vh = window.innerHeight;
-  const hdrH = document.querySelector('.hdr').offsetHeight + 8;
-  const availH = vh - hdrH - 10; // controles dentro del canvas, no restan
-  const sbW = Math.max(58, Math.min(82, Math.floor(vw * 0.185)));
-  const availW = vw - sbW - 12;
-  CELL = Math.max(18, Math.min(Math.floor(availW/COLS), Math.floor(availH/ROWS), 50));
+  const hdrH = 46; // altura fija del header
+  const availH = vh - hdrH - 12;
+  const sbW = Math.max(56, Math.min(78, Math.floor(vw * 0.18)));
+  const gap = 4;
+  const availW = vw - 8 - sbW - gap;
+  const cellByW = Math.floor(availW / COLS);
+  const cellByH = Math.floor(availH / ROWS);
+  CELL = Math.max(18, Math.min(cellByW, cellByH, 52));
 
   const sb = document.getElementById('sb');
   sb.style.width = sbW + 'px';
