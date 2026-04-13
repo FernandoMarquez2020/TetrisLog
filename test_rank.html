@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"/><title>Test Ranking</title></head>
+<body style="background:#111;color:#0f0;font-family:monospace;padding:20px;font-size:13px">
+<h2>🔬 Test Ranking Firebase</h2>
+<div id="log" style="white-space:pre-line"></div>
+<button onclick="test()" style="padding:10px 20px;margin:10px;font-size:14px">▶ TEST</button>
+<button onclick="addTest()" style="padding:10px 20px;margin:10px;font-size:14px;background:#333;color:#ff0">+ AGREGAR DATOS TEST</button>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyBd0Vuukdf2UlpzfztvgtF817UrVlsxbcU",
+  authDomain:"memoon-f804a.firebaseapp.com",
+  databaseURL:"https://memoon-f804a-default-rtdb.firebaseio.com",
+  projectId:"memoon-f804a",
+});
+const db = firebase.database();
+
+function log(msg, color='#0f0') {
+  const d = document.getElementById('log');
+  d.innerHTML += `<span style="color:${color}">${new Date().toISOString().substr(11,8)} ${msg}\n</span>`;
+}
+
+async function test() {
+  log('=== TEST RANKING ===', '#fff');
+  
+  // 1. Ver qué hay en tetris_ranking
+  const snap = await db.ref('tetris_ranking').get();
+  log(`Total registros: ${snap.size}`);
+  
+  let all = [];
+  snap.forEach(c => {
+    all.push({...c.val(), key:c.key});
+    log(`  key=${c.key.substr(0,8)} name=${c.val().name} score=${c.val().score}`);
+  });
+  
+  log(`\nOrdenado por score:`, '#ff0');
+  all.sort((a,b) => b.score - a.score);
+  all.forEach((d,i) => log(`  ${i+1}. ${d.name} - ${d.score}`));
+  
+  // 2. Test con listener
+  log('\nTest con .on("value"):', '#0ff');
+  let count = 0;
+  db.ref('tetris_ranking').on('value', snap => {
+    count++;
+    let items = [];
+    snap.forEach(c => items.push({...c.val()}));
+    log(`  Listener #${count}: ${items.length} items`);
+    items.forEach((d,i) => log(`    ${i+1}. ${d.name} - ${d.score}`));
+    if(count >= 2) db.ref('tetris_ranking').off('value');
+  });
+}
+
+async function addTest() {
+  log('Agregando datos de prueba...', '#ff0');
+  const testData = [
+    {name:'FERNANDO', score:5000},
+    {name:'JUAN', score:3200},
+    {name:'MARIA', score:8100},
+    {name:'PEDRO', score:1500},
+    {name:'ANA', score:12000},
+  ];
+  for(const d of testData) {
+    await db.ref('tetris_ranking').push({...d, date:Date.now()});
+    log(`  Agregado: ${d.name} - ${d.score}`);
+  }
+  log('✅ Listo — ahora presioná TEST', '#0f0');
+}
+</script>
+</body>
+</html>
